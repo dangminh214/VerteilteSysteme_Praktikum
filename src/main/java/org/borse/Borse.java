@@ -1,12 +1,9 @@
 package org.borse;
-import java.net.DatagramSocket;
 import java.net.SocketException;
 
 public class Borse {
-    private DatagramSocket socket = new DatagramSocket();
-    private final ConnectionHandle[] listOfConnections;
-
-    public Borse(ConnectionHandle[] listOfConnections) throws SocketException {
+    public final Connection[] listOfConnections;
+    public Borse(Connection[] listOfConnections) throws SocketException {
         this.listOfConnections = listOfConnections;
         System.out.println("Borse: created");
     }
@@ -15,12 +12,13 @@ public class Borse {
                 for (int i= 0; i<listOfConnections.length; i++) {
                     if (listOfConnections!=null) {
                         String msg = new Wertpapier().createMsg();
-                        listOfConnections[i].sendMessage(socket,msg);
+                        listOfConnections[i].sendMessage(msg);
                         long sendTime = System.nanoTime();
-                        //listOfConnections[i].receiveMessage(socket);
+                        listOfConnections[i].receiveMessage();
                         long receiveTime = System.nanoTime();
                         long rtt = receiveTime - sendTime;
                         System.out.println("RTT: " + rtt + " nanosecond");
+                        System.out.println("--------------------------------------------------");
                         Thread.sleep(5000); // Wait for 5 seconds before sending the next message
                     }
                 }
