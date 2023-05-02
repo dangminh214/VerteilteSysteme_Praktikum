@@ -77,6 +77,6 @@ public class Bank {
         System.out.println("Portfolio value for " + name + ": " + currentValue + "€");
         System.out.println("Difference from latest update: "  + differenceValue);
 
-        connection1.sendMessage(socket, "Successfully Receive Message from " + senderAddress);
+        //connection1.sendMessage("Successfully Receive Message from " + senderAddress);
     }
 }

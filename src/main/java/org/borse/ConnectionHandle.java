@@ -4,17 +4,17 @@ import java.io.IOException;
 import java.net.*;
 
 public class ConnectionHandle {
-
     InetAddress address;
     private  int port;
     byte[] buffer;
 
-    DatagramSocket socket;
+    DatagramSocket socket1;
 
-    public ConnectionHandle(InetAddress address, int port) throws UnknownHostException {
+
+    public ConnectionHandle(InetAddress address, int port) throws UnknownHostException, SocketException {
         this.address = address;
         this.port = port;
-        //socket1 = DatagramSocket(port);
+        //socket1 =  new DatagramSocket(port);
     }
 
     public void sendMessage(DatagramSocket socket, String msg) throws IOException {
