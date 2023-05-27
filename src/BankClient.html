@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bank Client</title>
+</head>
+<body>
+    <h1>Bank Cient</h1>
+    <form action="http://localhost:8080/getData" method="get">
+        <h2>Get Data from Bank</h2>
+        <input type="submit" value="get Data">
+    </form>
+
+    <form actopm ="http://localhost:8080/" method="post">
+        <h2>Input Bank Data</h2>
+        <label>Transaction Type</label>
+
+        <button value="sendMoney">send Money</button>
+        <button value="lend Money">lend Money</button>
+        <button value="stock Money">buy Stock</button>
+
+        <div id="moneyInputSection">
+            <label for="money">Money:</label>
+            <input type="number" id="money" name="money">
+        </div>
+
+    </form>
+
+
+
+
+
+</body>
+</html>

@@ -1,27 +1,40 @@
 package org.borse;
-import java.net.SocketException;
 
-public class Borse {
-    public final Connection[] listOfConnections;
-    public Borse(Connection[] listOfConnections) throws SocketException {
-        this.listOfConnections = listOfConnections;
-        System.out.println("Borse: created");
+
+import java.io.*;
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class Borse  {
+
+    private final HandleConnectionWithBank[] handlersWithBanks;
+
+    private final Timer mainTimer;
+    private final String borseName;
+    public Borse(String borseName, HandleConnectionWithBank[] handlersWithBanks) throws IOException {
+        this.mainTimer = new Timer();
+        this.handlersWithBanks = handlersWithBanks;
+        this.borseName= borseName;
     }
-    public void startStreaming() throws Exception {
-        while (true) {
-                for (int i= 0; i<listOfConnections.length; i++) {
-                    if (listOfConnections!=null) {
-                        String msg = new Wertpapier().createMsg();
-                        listOfConnections[i].sendMessage(msg);
-                        long sendTime = System.nanoTime();
-                        listOfConnections[i].receiveMessage();
-                        long receiveTime = System.nanoTime();
-                        long rtt = receiveTime - sendTime;
-                        System.out.println("RTT: " + rtt + " nanosecond");
-                        System.out.println("--------------------------------------------------");
-                        Thread.sleep(5000); // Wait for 5 seconds before sending the next message
-                    }
+    public void startPullingData(int delay) {
+        mainTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                broadcastToBanks();
+            }
+        }, 0, delay);
+    }
+
+    public void broadcastToBanks() {
+        try {
+            for (HandleConnectionWithBank handler : handlersWithBanks) {
+                if (handler != null) {
+                    String msg = new Wertpapier().toString();
+                    handler.sendMessage(msg);
                 }
+            }
+        } catch (IOException ignored) {
         }
     }
+
 }
