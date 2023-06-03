@@ -32,9 +32,9 @@ public class HandleConnectionWithBank {
     }
 
     boolean firstTime;
-    public HandleConnectionWithBank(InetAddress sensorAddress, int sensorPort, DatagramSocket receiver) {
-        address = sensorAddress;
-        port = sensorPort;
+    public HandleConnectionWithBank(InetAddress targetAddress, int targetPort, DatagramSocket receiver) {
+        address = targetAddress;
+        port = targetPort;
         this.receiver = receiver;
         this.firstTime =false;
     }
