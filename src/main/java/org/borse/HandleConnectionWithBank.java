@@ -23,9 +23,11 @@ public class HandleConnectionWithBank {
      */
     private final DatagramSocket receiver;
 
+    /*
     public boolean isFirstTime() {
         return firstTime;
     }
+     */
 
     public void setFirstTime(boolean firstTime) {
         this.firstTime = firstTime;
