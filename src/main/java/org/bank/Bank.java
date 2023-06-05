@@ -51,7 +51,7 @@ public class Bank extends Thread   {
         try {
             while (running) {
                 Socket clientSocket = serverSocket.accept();
-                this.client = new Client(clientSocket, savedMessage, currentValue);
+                this.client = new Client(clientSocket, this);
                 this.client.start();
             }
         } catch (Exception ignored) {

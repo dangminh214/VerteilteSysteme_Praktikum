@@ -1,6 +1,8 @@
 package org.bank;
 import org.borse.CodeOfWertpapier;
 import org.borse.Wertpapier;
+import org.handler.Message;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,9 +17,6 @@ public class Client extends Thread {
     public static final String DENY_ANSWER = "402 Not Allow";
     public static final int CONTENT_LENGTH_BEGIN_INDEX = 16;
     private static final int CONTENT_TYPE_BEGIN_INDEX = 14;
-    private static final int MONEY_BEGIN_INDEX = 7;
-    private static final int CODE_BEGIN_INDEX = 6;
-    private static final int QUANTITY_BEGIN_INDEX = 10;
     private final Socket connection;
     private final BufferedReader reader;
     private final OutputStream writer;
@@ -31,13 +30,13 @@ public class Client extends Thread {
     private final BufferedReader in;
     private final OutputStream out;
     private boolean checkRequest ;
-    public Client(Socket clientConnection, HashMap<CodeOfWertpapier, Wertpapier> savedMessage, int currentValue)
+    private Bank bank;
+    public Client(Socket clientConnection, Bank bank)
             throws IOException {
-        this.savedMessage= savedMessage;
+        this.bank = bank;
         connection = clientConnection;
         reader = new BufferedReader(new InputStreamReader(clientConnection.getInputStream()));
         writer = clientConnection.getOutputStream();
-        this.currentValue = currentValue;
         in = new BufferedReader(new InputStreamReader(clientConnection.getInputStream()));
         out = clientConnection.getOutputStream();
         this.checkRequest = false;
@@ -49,7 +48,7 @@ public class Client extends Thread {
             while (!connection.isClosed()) {
                 parseHeader();
                 bodyContent = getBody();
-                if (bodyContent == null|| bodyContent=="")
+                if (bodyContent == null|| bodyContent.equals(""))
                     break;
                 else{
                     String transactionType= "";
@@ -75,55 +74,52 @@ public class Client extends Thread {
 
                     }
                     evaluateRequest(transactionType,money,code,quantity);
-                    sendAnswer();
 
                 }
             }
         } catch (IOException ignored) {}
     }
 
-    private void evaluateRequest(String transactionType, int money, CodeOfWertpapier code, int quantity) {
-        if(transactionType == ""|| transactionType == null) return;
+   private void evaluateRequest
+           (String transactionType, int money, CodeOfWertpapier code, int quantity)
+   throws IOException
+   {
+       if (transactionType.equals("")) return;
         else if(transactionType.equals("sendMoney") ){
-            System.out.println("Send money");
-            this.currentValue+= money;
-            System.out.println("New value of Bank: "+ this.currentValue);
+            bank.setCurrentValue(bank.getCurrentValue() + money);
             this.statusMessage= DEFAULT_ANSWER;
-
+            sendAnswer("Send money: "+money);
         }
+
         else if(transactionType.equals("lendMoney")){
-            System.out.println("Lend money");
-            if(currentValue < money){
-                System.out.println("Exceed amount of money ");
-                this.statusMessage= DENY_ANSWER;
-            }
-            else {
-                this.statusMessage= DEFAULT_ANSWER;
-                this.currentValue-= money;
-                System.out.println("New value of Bank: "+ this.currentValue);
-
-            }
-        }
-        else if(transactionType.equals("buyStock")){
-            System.out.println(savedMessage);
-            Wertpapier message = savedMessage.get(code);
-            if(message == null){
-                System.out.println("No Stock code found");
-                this.statusMessage= DENY_ANSWER;
-            }
-            else{
-                if(message.getQuantity()< quantity){
-                    System.out.println("Not enough Stock with this code");
+                if (bank.getCurrentValue() < money) {
                     this.statusMessage= DENY_ANSWER;
+                    sendAnswer("Exceed amount of money");
                 }
-                else{
-                    message.setQuantity(message.getQuantity()-quantity);
-                    System.out.println("Transaction successful");
-                    this.statusMessage= DEFAULT_ANSWER;
+                else {
+                    this.statusMessage = DEFAULT_ANSWER;
+                    bank.setCurrentValue(bank.getCurrentValue()-money);
+                    sendAnswer("Lend money" +money);
                 }
             }
 
-
+        else if(transactionType.equals("buy Stock")) {
+           Wertpapier message = bank.getSavedMessage().get(code);
+           if (message == null) {
+               this.statusMessage = DENY_ANSWER;
+               sendAnswer("No Stock code found");
+           }
+            else {
+                if (message.getQuantity() < quantity) {
+                    this.statusMessage = DENY_ANSWER;
+                    sendAnswer("Not enough Stock with this code");
+                }
+                else {
+                    message.setQuantity(message.getQuantity()-quantity);
+                    this.statusMessage = DEFAULT_ANSWER;
+                    sendAnswer("Transaction successful");
+                }
+            }
         }
     }
 
@@ -155,7 +151,7 @@ public class Client extends Thread {
         if (requestMissesProperHeaderFields()) {
             contentLength = 0;
             statusMessage = BAD_REQUEST;
-            sendAnswer();
+            sendAnswer("");
         }
     }
     private int getMoney(String data){
@@ -187,11 +183,12 @@ public class Client extends Thread {
         }
         return data.toString();
     }
-    private void sendAnswer() throws IOException {
+    private void sendAnswer(String msg) throws IOException {
         String http = "HTTP/1.1 " + statusMessage + "\r\n"
                 + "Bank: bank1\r\n"
                 + "Content-Type: text/plain\r\n"
-                + "Content-Length: 0\r\n\r\n";
+                + "Content-Length" + msg.length() + "\r\n\r\n"
+                + msg;
         System.out.println(http);
         writer.write(http.getBytes());
     }
@@ -219,8 +216,9 @@ public class Client extends Thread {
             String http = "HTTP/1.1 " + statusMessage + "\r\n"
                     + "Server: bank9000\r\n"
                     + "Content-Type: text/plain\r\n"
-                    + "Content-Length: "+ String.valueOf(this.currentValue+2).length()+ " \r\n\r\n"
-                    + currentValue+ " $";
+                    + "Content-Length: "+ String.valueOf(bank.getCurrentValue()).length()+ " \r\n\r\n"
+                    + bank.getCurrentValue()+ " $";
+            System.out.println(http);
             out.write(http.getBytes());
             out.flush();
             this.checkRequest= true;
@@ -231,10 +229,6 @@ public class Client extends Thread {
     private boolean requestMissesProperHeaderFields() {
         return contentLength == -1 || !contentType.equals("application/x-www-form-urlencoded");
     }
-    public boolean isCheckRequest() {
-        return checkRequest;
-    }
-
     public void setCheckRequest(boolean checkRequest) {
         this.checkRequest = checkRequest;
     }

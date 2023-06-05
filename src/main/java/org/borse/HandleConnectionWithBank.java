@@ -23,22 +23,10 @@ public class HandleConnectionWithBank {
      */
     private final DatagramSocket receiver;
 
-    /*
-    public boolean isFirstTime() {
-        return firstTime;
-    }
-     */
-
-    public void setFirstTime(boolean firstTime) {
-        this.firstTime = firstTime;
-    }
-
-    boolean firstTime;
     public HandleConnectionWithBank(InetAddress targetAddress, int targetPort, DatagramSocket receiver) {
         address = targetAddress;
         port = targetPort;
         this.receiver = receiver;
-        this.firstTime =false;
     }
 
     public void sendMessage(String msg) throws IOException {

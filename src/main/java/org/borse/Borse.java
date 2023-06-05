@@ -11,7 +11,9 @@ public class Borse  {
 
     private final Timer mainTimer;
     private final String borseName;
-    public Borse(String borseName, HandleConnectionWithBank[] handlersWithBanks) throws IOException {
+    public Borse(String borseName, HandleConnectionWithBank[] handlersWithBanks)
+            throws IOException {
+        System.out.println(borseName + "starts");
         this.mainTimer = new Timer();
         this.handlersWithBanks = handlersWithBanks;
         this.borseName= borseName;

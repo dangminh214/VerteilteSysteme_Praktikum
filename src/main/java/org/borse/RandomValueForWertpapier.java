@@ -1,6 +1,6 @@
 package org.borse;
 import java.util.Random;
-//import java.util.concurrent.ThreadLocalRandom;
+
 public class RandomValueForWertpapier {
 
     private static final Random random = new Random();

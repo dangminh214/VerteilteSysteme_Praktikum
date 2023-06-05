@@ -8,6 +8,7 @@ import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 
 public abstract class ConnectionHandler extends Thread {
@@ -18,10 +19,16 @@ public abstract class ConnectionHandler extends Thread {
     private boolean running;
 
     private Bank bank;
+    private int sentPackets;
+    private int lostPackets;
+
     public ConnectionHandler(Bank bank) throws SocketException {
         this.bank = bank;
         this.receiver = new DatagramSocket(bank.getPort());
+        this.receiver.setSoTimeout(1000);
         this.running = true;
+        this.sentPackets = 0;
+        this.lostPackets = 0;
     }
 
     public void stopHandler() {
@@ -41,11 +48,19 @@ public abstract class ConnectionHandler extends Thread {
             try {
                 receiver.receive(request);
                 receiver.send(evaluateData(request.getData(), request.getLength(), request.getAddress(), request.getPort()));
+
+                double packetLossRate = (double) lostPackets / sentPackets * 100;
+                System.out.println("Packet loss rate: " + packetLossRate + "%");
             }
-            catch(Exception ignored) {
+            catch(SocketTimeoutException e) {
+
+            }
+            catch (Exception ignored) {
                 System.out.println("not able to catch message");
                 System.out.println(ignored.getMessage());
+                lostPackets ++ ;
             }
+            sentPackets++;
         }
         receiver.close();
     }
@@ -59,10 +74,10 @@ public abstract class ConnectionHandler extends Thread {
         int price = Integer.parseInt(requestArray[2]);
         this.bank.addSavedMessage(CodeOfWertpapier.valueOf(kurzel), quantity, price);
 
-        System.out.println(this.bank.getSavedMessage());
-
+        int oldValue = this.bank.getCurrentValue();
         int newValue = calculate(this.bank.getSavedMessage());
-        int differenceValue = newValue - this.bank.getCurrentValue();
+        this.bank.setCurrentValue(newValue);
+        int differenceValue = newValue - oldValue;
 
         if(differenceValue > 0){
             System.out.println("The Bank receives " + differenceValue +"€ more than last time");
@@ -70,7 +85,6 @@ public abstract class ConnectionHandler extends Thread {
         else{
             System.out.println("The Bank loses " + (-differenceValue) +"€ than last time");
         }
-        this.bank.setCurrentValue(newValue);
         System.out.println("This Bank current value: " + this.bank.getCurrentValue());
 
         return reply(address, port);
@@ -81,7 +95,7 @@ public abstract class ConnectionHandler extends Thread {
         return new DatagramPacket(message.getPayload(), message.length(), address, port);
     }
     private int calculate(HashMap<CodeOfWertpapier, Wertpapier> data){
-        int sum = 0;
+        int sum = this.bank.getCurrentValue();
         for (Wertpapier value : data.values()) {
             sum += value.getQuantity() * value.getPrice();
         }
