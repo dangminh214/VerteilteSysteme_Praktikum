@@ -1,10 +1,10 @@
-package org.handler;
+package udphandler;
 
-public class Message {
-    private final byte [] payload;
+public class UDPMessage {
+    private final byte[] payload;
     private final int length;
 
-    public Message(String s) {
+    public UDPMessage(String s) {
         int length = s.length();
         this.length = length;
         this.payload = s.getBytes();
@@ -22,4 +22,4 @@ public class Message {
     public String toString() {
         return new String(this.payload);
     }
- }
+}

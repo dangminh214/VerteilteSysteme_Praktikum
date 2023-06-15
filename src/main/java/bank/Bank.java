@@ -1,21 +1,22 @@
-package org.bank;
+package bank;
 
-import org.borse.CodeOfWertpapier;
-import org.borse.Wertpapier;
+import borse.CodeOfWertpapier;
+import borse.Wertpapier;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
-import org.handler.ConnectionHandler;
-import org.handler.Message;
+
+import udphandler.UDPHandler;
+import udphandler.UDPMessage;
 
 /**
  * Sensor which generates random data
  * and communicates using a DatagramSocket.
  */
 public class Bank extends Thread   {
-    private final ConnectionHandler handler;
+    private final UDPHandler handler;
     private final String bankName;
     private int currentValue;
     private int HTTP_DEFAULT_PORT;
@@ -23,7 +24,6 @@ public class Bank extends Thread   {
 
     private Client client;
     private final ServerSocket serverSocket;
-
     private HashMap<CodeOfWertpapier, Wertpapier> savedMessage;
     private boolean running;
 
@@ -36,22 +36,21 @@ public class Bank extends Thread   {
         this.port = port;
         this.running = true;
         serverSocket = new ServerSocket(HTTP_DEFAULT_PORT);
-        this.handler = new ConnectionHandler(this) {
+        this.handler = new UDPHandler(this) {
             @Override
-            public Message getMessage() {
+            public UDPMessage getMessage() {
                 String message = bankName+": RTT check" ;
-                return new Message(message);
+                return new UDPMessage(message);
             }
         };
     }
-
     @Override
     public void run() {
         handler.start();
         try {
             while (running) {
-                Socket clientSocket = serverSocket.accept();
-                this.client = new Client(clientSocket, this);
+                Socket client = serverSocket.accept();
+                this.client = new Client(client, this);
                 this.client.start();
             }
         } catch (Exception ignored) {
@@ -62,22 +61,35 @@ public class Bank extends Thread   {
     }
 
     public int getPort(){
-        return this.port;
+       return this.port;
     }
 
-    public void addSavedMessage(CodeOfWertpapier code, int quantity, int price){
-        Wertpapier msg = savedMessage.get(code);
+    public void addSavedMessage(CodeOfWertpapier codeOfWertpapier, int quantity, int price){
+        Wertpapier msg = savedMessage.get(codeOfWertpapier);
         if (msg == null) {
-            msg = new Wertpapier(code, quantity, price);
-            savedMessage.put(code, msg);
+            msg = new Wertpapier(codeOfWertpapier, quantity, price);
+            savedMessage.put(codeOfWertpapier, msg);
         } else {
             int newQuantity = msg.getQuantity() + quantity;
             int newPrice = price;
             msg.setQuantity(newQuantity);
             msg.setPrice(newPrice);
-            savedMessage.replace(code, msg);
+            savedMessage.replace(codeOfWertpapier, msg);
         }
     }
+    /*
+    @Override
+    public Socket establishConnection(String host, int port) {
+        Socket tmp = null;
+        while (tmp == null) {
+            try {
+                tmp = new Socket(InetAddress.getByName(host), HTTP_DEFAULT_PORT);
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        return tmp;
+    }*/
 
     public int getCurrentValue() {
         return currentValue;
@@ -85,5 +97,7 @@ public class Bank extends Thread   {
     public void setCurrentValue(int value) {
         this.currentValue = value;
     }
+
+
 
 }

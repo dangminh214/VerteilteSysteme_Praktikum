@@ -1,4 +1,4 @@
-package org.borse;
+package borse;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -8,16 +8,16 @@ public class Main {
     public static void main(String[] args) throws IOException {
 
         int handlerCount = args.length/2;
-        HandleConnectionWithBank[] handlers = new HandleConnectionWithBank[handlerCount];
+        BankHandler[] handlers = new BankHandler[handlerCount];
         DatagramSocket receiver = new DatagramSocket();
         int pos =0;
         for(int i = 0;i< args.length-2;i+=2){
-            handlers[pos]= new HandleConnectionWithBank(InetAddress.getByName(args[i]),Integer.parseInt(args[i+1]),
-                    receiver);
+            handlers[pos]= new BankHandler(InetAddress.getByName(args[i]),Integer.parseInt(args[i+1]),
+                receiver);
             pos++;
         }
 
         Borse borse= new Borse(args[args.length-1],handlers);
-        borse.startPullingData(1000);
+        borse.startPullingData(3000);
     }
 }

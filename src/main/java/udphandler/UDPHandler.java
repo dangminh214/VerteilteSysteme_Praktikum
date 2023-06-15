@@ -1,17 +1,17 @@
-package org.handler;
+package udphandler;
 
-import org.bank.Bank;
-import org.borse.CodeOfWertpapier;
-import org.borse.Wertpapier;
-
-import java.net.DatagramSocket;
+import bank.Bank;
+import borse.CodeOfWertpapier;
+import borse.Wertpapier;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 
-public abstract class ConnectionHandler extends Thread {
+public abstract class UDPHandler extends Thread {
+
     public static final int BUFFER_SIZE = 512;
 
     private final DatagramSocket receiver;
@@ -21,9 +21,8 @@ public abstract class ConnectionHandler extends Thread {
     private Bank bank;
     private int sentPackets;
     private int lostPackets;
-
-    public ConnectionHandler(Bank bank) throws SocketException {
-        this.bank = bank;
+    public UDPHandler(Bank bank) throws SocketException {
+        this.bank= bank;
         this.receiver = new DatagramSocket(bank.getPort());
         this.receiver.setSoTimeout(1000);
         this.running = true;
@@ -35,7 +34,7 @@ public abstract class ConnectionHandler extends Thread {
         this.running = false;
     }
 
-    protected abstract Message getMessage();
+    protected abstract UDPMessage getMessage();
 
     @Override
     public void run() {
@@ -43,56 +42,49 @@ public abstract class ConnectionHandler extends Thread {
         DatagramPacket request;
         while (running) {
             buffer = new byte[BUFFER_SIZE];
-            request = new DatagramPacket(buffer, BUFFER_SIZE);
+            request = new DatagramPacket(buffer,BUFFER_SIZE);
 
             try {
                 receiver.receive(request);
                 receiver.send(evaluateData(request.getData(), request.getLength(), request.getAddress(), request.getPort()));
-
                 double packetLossRate = (double) lostPackets / sentPackets * 100;
                 System.out.println("Packet loss rate: " + packetLossRate + "%");
-            }
-            catch(SocketTimeoutException e) {
 
             }
-            catch (Exception ignored) {
-                System.out.println("not able to catch message");
+            catch (SocketTimeoutException e) {
+                System.out.println("UDP packet not arrived: " + e.getMessage());
+                lostPackets++;
+            }catch (Exception ignored) {
+                System.out.println("not be able to catch message ");
                 System.out.println(ignored.getMessage());
-                lostPackets ++ ;
+                lostPackets++;
             }
             sentPackets++;
+
         }
         receiver.close();
     }
 
     private DatagramPacket evaluateData(byte[] packetBytes, int length, InetAddress address, int port) {
-        String decodedRequest = new String(packetBytes, 0, length);
-        String [] requestArray = decodedRequest.split(",");
-
+        String decodedRequest = new String(packetBytes,0,length);
+        String[] requestArray = decodedRequest.split(",");
         int quantity = Integer.parseInt(requestArray[0]);
         String kurzel = requestArray[1];
         int price = Integer.parseInt(requestArray[2]);
-        this.bank.addSavedMessage(CodeOfWertpapier.valueOf(kurzel), quantity, price);
-
+        this.bank.addSavedMessage(CodeOfWertpapier.valueOf(kurzel),quantity,price);
         int oldValue = this.bank.getCurrentValue();
         int newValue = calculate(this.bank.getSavedMessage());
         this.bank.setCurrentValue(newValue);
-        int differenceValue = newValue - oldValue;
-
-        if(differenceValue > 0){
-            System.out.println("The Bank receives " + differenceValue +"€ more than last time");
+        int difference = newValue - oldValue;
+        if(difference >0 ){
+            System.out.println("The Bank receives "+ difference+"$ more than last time");
         }
         else{
-            System.out.println("The Bank loses " + (-differenceValue) +"€ than last time");
+            System.out.println("The Bank loses "+ (-difference)+"$ than last time");
         }
-        System.out.println("This Bank current value: " + this.bank.getCurrentValue());
-
         return reply(address, port);
-    }
 
-    public DatagramPacket reply(InetAddress address, int port) {
-        Message message = getMessage();
-        return new DatagramPacket(message.getPayload(), message.length(), address, port);
+
     }
     private int calculate(HashMap<CodeOfWertpapier, Wertpapier> data){
         int sum = this.bank.getCurrentValue();
@@ -104,4 +96,11 @@ public abstract class ConnectionHandler extends Thread {
     public DatagramPacket error(InetAddress address, int port) {
         return new DatagramPacket("error".getBytes(), "error".length(), address, port);
     }
+
+    public DatagramPacket reply(InetAddress address, int port) {
+        UDPMessage message = getMessage();
+        return new DatagramPacket(message.getPayload(), message.length(), address, port);
+    }
 }
+
+
